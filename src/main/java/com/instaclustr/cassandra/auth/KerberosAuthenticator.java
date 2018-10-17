@@ -331,10 +331,7 @@ public class KerberosAuthenticator implements IAuthenticator {
     {
 
         final String saslProtocol = config.getKerberosPrincipalServiceNameComponent();
-        final Map<String, String> saslProperties = ImmutableMap.<String, String>builder()
-                .put(Sasl.SERVER_AUTH, "true")
-                .put(Sasl.QOP, config.qop())
-                .build();
+        final Map<String, String> saslProperties = ImmutableMap.<String, String>builder().put(Sasl.QOP, config.qop()).build();
 
         return new KerberosSaslAuthenticator(saslProtocol, saslProperties);
     }
