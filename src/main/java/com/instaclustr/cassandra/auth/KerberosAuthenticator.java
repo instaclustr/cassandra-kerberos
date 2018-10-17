@@ -197,6 +197,7 @@ public class KerberosAuthenticator implements IAuthenticator {
                 }
             }
 
+            logger.debug("Kerberos keytab location: {}", file.getAbsolutePath());
             return file;
         }
 
@@ -371,7 +372,7 @@ public class KerberosAuthenticator implements IAuthenticator {
             }
         }
 
-        private void handleAuthorizeCallback(final AuthorizeCallback ac) throws javax.security.sasl.AuthenticationException {
+        private void handleAuthorizeCallback(final AuthorizeCallback ac) throws AuthenticationException {
             ac.setAuthorizedID(null);
             ac.setAuthorized(false);
 
@@ -379,9 +380,11 @@ public class KerberosAuthenticator implements IAuthenticator {
             if (ac.getAuthenticationID() == null)
             {
                 logger.warn("Kerberos authentication succeeded, but the authentication ID is null.");
-                throw new javax.security.sasl.AuthenticationException("Authentication ID must not be null");
+                throw new AuthenticationException("Authentication ID must not be null");
             }
 
+            // authentication ID is a Kerberos principal. We need to split the service/username component from the full
+            // principal to use as the Cassandra user.
             final String clientPrincipal = ac.getAuthenticationID().split("[@/]")[0];
 
             // will throw an AuthenticationException if user does not exist
@@ -418,7 +421,7 @@ public class KerberosAuthenticator implements IAuthenticator {
                                     "specified by the authorization ID.",
                             ac.getAuthenticationID(), principalUser.getName(), assumedUser.getName());
 
-                    throw new javax.security.sasl.AuthenticationException(
+                    throw new AuthenticationException(
                             String.format("Cassandra user \"%s\" is unable to assume the role \"%s\"",
                                     principalUser.getName(), assumedUser.getName()));
                 }
@@ -497,7 +500,7 @@ public class KerberosAuthenticator implements IAuthenticator {
     {
         try
         {
-            logger.debug("Querying user {}", roleName);
+            logger.debug("Querying role {}", roleName);
             SelectStatement authenticationStatement = this.getRoleStatement;
 
             ResultMessage.Rows rows =
