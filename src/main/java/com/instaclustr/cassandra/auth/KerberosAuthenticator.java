@@ -389,12 +389,12 @@ public class KerberosAuthenticator implements IAuthenticator {
 
             if (ac.getAuthorizationID() == null)
             {
-                ac.setAuthorizedID(ac.getAuthenticationID());
+                ac.setAuthorizedID(clientPrincipal);
                 ac.setAuthorized(true);
                 this.authorizationComplete = true;
 
-                logger.trace("Kerberos client authenticated: authenticationID={}",
-                        ac.getAuthenticationID());
+                logger.trace("Kerberos client principal \"{}\" authenticated as Cassandra user \"{}\"",
+                        ac.getAuthenticationID(), principalUser);
             }
             else
             {
