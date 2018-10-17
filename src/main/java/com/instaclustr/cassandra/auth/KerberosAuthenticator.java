@@ -347,7 +347,7 @@ public class KerberosAuthenticator implements IAuthenticator {
     {
         private final SaslServer saslServer;
 
-        private boolean authorizationComplete = false;
+        private AuthenticatedUser authenticatedUser = null;
 
         private KerberosSaslAuthenticator(final String saslProtocol, final Map<String, ?> saslProperties)
         {
@@ -379,7 +379,7 @@ public class KerberosAuthenticator implements IAuthenticator {
             if (ac.getAuthenticationID() == null)
             {
                 logger.warn("Kerberos authentication succeeded, but the authentication ID is null.");
-                throw new javax.security.sasl.AuthenticationException("Authentication ID is null");
+                throw new javax.security.sasl.AuthenticationException("Authentication ID must not be null");
             }
 
             final String clientPrincipal = ac.getAuthenticationID().split("[@/]")[0];
@@ -389,12 +389,12 @@ public class KerberosAuthenticator implements IAuthenticator {
 
             if (ac.getAuthorizationID() == null)
             {
-                ac.setAuthorizedID(clientPrincipal);
+                this.authenticatedUser = principalUser;
+                ac.setAuthorizedID(principalUser.getName());
                 ac.setAuthorized(true);
-                this.authorizationComplete = true;
 
                 logger.trace("Kerberos client principal \"{}\" authenticated as Cassandra user \"{}\"",
-                        ac.getAuthenticationID(), principalUser);
+                        ac.getAuthenticationID(), principalUser.getName());
             }
             else
             {
@@ -404,24 +404,23 @@ public class KerberosAuthenticator implements IAuthenticator {
                 // the role represented by the AuthorizationID, then assume that role directly
                 if (principalUser.getRoles().contains(assumedUser.getPrimaryRole()))
                 {
-                    ac.setAuthorizedID(ac.getAuthorizationID());
+                    this.authenticatedUser = assumedUser;
+                    ac.setAuthorizedID(assumedUser.getName());
                     ac.setAuthorized(true);
-                    this.authorizationComplete = true;
 
-                    logger.trace("Kerberos client authenticated: authenticationID={} authorizationID={}",
-                            ac.getAuthenticationID(), ac.getAuthorizationID());
+                    logger.trace("Kerberos client principal \"{}\" authenticated as Cassandra user \"{}\"",
+                            ac.getAuthenticationID(), assumedUser.getName());
                 }
                 else
                 {
-                    logger.trace("Kerberos client authentication succeeded for {}, but user does not have " +
-                            "permission to assume role specified by authorization ID: {}",
-                            ac.getAuthenticationID(), ac.getAuthorizationID());
+                    logger.trace("Kerberos client principal \"{}\" authenticated, but the Cassandra user \"{}\" " +
+                                    "does not have permission to assume the role \"{}\" " +
+                                    "specified by the authorization ID.",
+                            ac.getAuthenticationID(), principalUser.getName(), assumedUser.getName());
 
                     throw new javax.security.sasl.AuthenticationException(
-                            "Cassandra user " + ac.getAuthenticationID() +
-                                    " does not have permission to assume role " +
-                                    ac.getAuthorizationID() +
-                                    " specified by the authorization ID");
+                            String.format("Cassandra user \"%s\" is unable to assume the role \"%s\"",
+                                    principalUser.getName(), assumedUser.getName()));
                 }
             }
         }
@@ -443,16 +442,16 @@ public class KerberosAuthenticator implements IAuthenticator {
         @Override
         public boolean isComplete()
         {
-            return saslServer.isComplete() && this.authorizationComplete;
+            return saslServer.isComplete() && (this.authenticatedUser != null);
         }
 
         @Override
         public AuthenticatedUser getAuthenticatedUser() throws AuthenticationException
         {
             if (!this.isComplete())
-                throw new AuthenticationException("SASL negotiation not complete");
+                throw new AuthenticationException("SASL negotiation is not complete");
 
-            return getCassandraUser(saslServer.getAuthorizationID());
+            return this.authenticatedUser;
         }
     }
 
@@ -475,13 +474,13 @@ public class KerberosAuthenticator implements IAuthenticator {
         {
             // the credentials were somehow invalid - either a non-existent role, or one without a defined password
             if (e.getCause() instanceof NoSuchRoleException)
-                throw new AuthenticationException("Cassandra user " + username + " does not exist");
+                throw new AuthenticationException(String.format("Provided username %s is incorrect", username));
 
             // an unanticipated exception occured whilst querying the credentials table
             if (e.getCause() instanceof RequestExecutionException)
             {
                 logger.trace("Error performing internal authentication", e);
-                throw new AuthenticationException("Error during authentication of user " + username + " : " + e.getMessage());
+                throw new AuthenticationException(String.format("Error during authentication of user %s : %s", username, e.getMessage()));
             }
 
             throw new RuntimeException(e);
