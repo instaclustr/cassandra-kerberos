@@ -23,8 +23,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import org.apache.cassandra.auth.*;
-import org.apache.cassandra.config.DatabaseDescriptor;
-import org.apache.cassandra.config.SchemaConstants;
 import org.apache.cassandra.cql3.QueryOptions;
 import org.apache.cassandra.cql3.QueryProcessor;
 import org.apache.cassandra.cql3.UntypedResultSet;
@@ -60,7 +58,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -94,7 +91,6 @@ public class KerberosAuthenticator implements IAuthenticator {
     private Subject subject;
 
     private SelectStatement getRoleStatement;
-    private UserCache cache;
 
     @Override
     public boolean requireAuthentication()
@@ -106,7 +102,7 @@ public class KerberosAuthenticator implements IAuthenticator {
     public Set<? extends IResource> protectedResources()
     {
         // Also protected by CassandraRoleManager, but the duplication doesn't hurt and is more explicit
-        return ImmutableSet.of(DataResource.table(SchemaConstants.AUTH_KEYSPACE_NAME, AuthKeyspace.ROLES));
+        return ImmutableSet.of(DataResource.table(AuthKeyspace.NAME, AuthKeyspace.ROLES));
     }
 
     private static class Configuration
@@ -272,11 +268,9 @@ public class KerberosAuthenticator implements IAuthenticator {
         // Prepare statement to check whether a role exists in Cassandra
         String query = String.format("SELECT %s FROM %s.%s WHERE role = ?",
                 ROLE,
-                SchemaConstants.AUTH_KEYSPACE_NAME,
+                AuthKeyspace.NAME,
                 AuthKeyspace.ROLES);
         this.getRoleStatement = prepare(query);
-
-        cache = new UserCache(this);
     }
 
     static String getKrb5LoginModuleName()
@@ -475,11 +469,11 @@ public class KerberosAuthenticator implements IAuthenticator {
         try
         {
             // This will throw an exception if the username does not exist
-            cache.get(username);
+            queryUserName(username);
 
             return new AuthenticatedUser(username);
         }
-        catch (ExecutionException | UncheckedExecutionException e)
+        catch (UncheckedExecutionException e)
         {
             // the credentials were somehow invalid - either a non-existent role, or one without a defined password
             if (e.getCause() instanceof NoSuchRoleException)
@@ -512,8 +506,7 @@ public class KerberosAuthenticator implements IAuthenticator {
             ResultMessage.Rows rows =
                     authenticationStatement.execute(QueryState.forInternalCalls(),
                             QueryOptions.forInternalCalls(ConsistencyLevel.LOCAL_ONE,
-                                    Lists.newArrayList(ByteBufferUtil.bytes(roleName))),
-                            System.nanoTime());
+                                    Lists.newArrayList(ByteBufferUtil.bytes(roleName))));
 
             // If either a non-existent role name was supplied, or no credentials
             // were found for that role we don't want to cache the result so we throw
@@ -532,32 +525,6 @@ public class KerberosAuthenticator implements IAuthenticator {
             logger.trace("Error performing internal authentication", e);
             throw e;
         }
-    }
-
-    private static class UserCache extends AuthCache<String, String> implements KerberosAuthenticator.CredentialsCacheMBean
-    {
-        private UserCache(KerberosAuthenticator authenticator)
-        {
-            super("CredentialsCache",
-                    DatabaseDescriptor::setCredentialsValidity,
-                    DatabaseDescriptor::getCredentialsValidity,
-                    DatabaseDescriptor::setCredentialsUpdateInterval,
-                    DatabaseDescriptor::getCredentialsUpdateInterval,
-                    DatabaseDescriptor::setCredentialsCacheMaxEntries,
-                    DatabaseDescriptor::getCredentialsCacheMaxEntries,
-                    authenticator::queryUserName,
-                    () -> true);
-        }
-
-        public void invalidateCredentials(String roleName)
-        {
-            invalidate(roleName);
-        }
-    }
-
-    public static interface CredentialsCacheMBean extends AuthCacheMBean
-    {
-        public void invalidateCredentials(String roleName);
     }
 
     // Just a marker so we can identify that invalid credentials were the
