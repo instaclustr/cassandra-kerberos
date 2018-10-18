@@ -288,7 +288,8 @@ public class KerberosAuthenticator implements IAuthenticator {
 
     private static Subject loginAsSubject(KerberosPrincipal servicePrincipal, File keytab)
     {
-        // Login as Kerberos subject defined in JAAS config
+        logger.debug("Logging in Kerberos service principal {} using keytab at {}", servicePrincipal, keytab.getAbsolutePath());
+        
         final javax.security.auth.login.Configuration conf = new javax.security.auth.login.Configuration() {
             @Override
             public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
