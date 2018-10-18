@@ -416,7 +416,7 @@ public class KerberosAuthenticator implements IAuthenticator {
                 }
                 else
                 {
-                    logger.trace("Kerberos client principal \"{}\" authenticated, but the Cassandra user \"{}\" " +
+                    logger.debug("Kerberos client principal \"{}\" authenticated, but the Cassandra user \"{}\" " +
                                     "does not have permission to assume the role \"{}\" " +
                                     "specified by the authorization ID.",
                             ac.getAuthenticationID(), principalUser.getName(), assumedUser.getName());
@@ -429,8 +429,8 @@ public class KerberosAuthenticator implements IAuthenticator {
 
             if (ac.isAuthorized())
             {
-                logger.trace("Kerberos client principal \"{}\" authenticated as Cassandra user \"{}\" with {} QOP",
-                        ac.getAuthenticationID(), ac.getAuthorizedID(), saslServer.getNegotiatedProperty(Sasl.QOP));
+                logger.debug("Kerberos client principal \"{}\" authorized as Cassandra user \"{}\"",
+                        ac.getAuthenticationID(), ac.getAuthorizedID());
             }
         }
 
