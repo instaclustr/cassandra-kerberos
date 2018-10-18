@@ -117,10 +117,10 @@ public class KerberosAuthenticator implements IAuthenticator {
         private String qop;
         private KerberosPrincipal servicePrincipal;
 
-        private static final String DEFAULT_CONFIGURATION = "cassandra-krb5.properties";
-        private static final String CONFIGURATION_KEYTAB_PATH_NAME = "keytab";
-        private static final String CONFIGURATION_QOP_NAME = "qop";
-        private static final String CONFIGURATION_SERVICE_PRINCIPAL_NAME = "service_principal";
+        static final String DEFAULT_CONFIGURATION = "cassandra-krb5.properties";
+        static final String CONFIGURATION_KEYTAB_PATH_NAME = "keytab";
+        static final String CONFIGURATION_QOP_NAME = "qop";
+        static final String CONFIGURATION_SERVICE_PRINCIPAL_NAME = "service_principal";
 
         private static final String DEFAULT_KEYTAB_PATH = "cassandra.keytab";
         private static final String DEFAULT_QOP = "auth";
@@ -318,7 +318,10 @@ public class KerberosAuthenticator implements IAuthenticator {
         }
         catch (LoginException e)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Kerberos service authentication failed. " +
+                    "Check that the values for " + Configuration.CONFIGURATION_KEYTAB_PATH_NAME + " and " +
+                    Configuration.CONFIGURATION_SERVICE_PRINCIPAL_NAME + " are correct in " +
+                    Configuration.DEFAULT_CONFIGURATION, e);
         }
     }
 
@@ -383,6 +386,9 @@ public class KerberosAuthenticator implements IAuthenticator {
                 throw new AuthenticationException("Authentication ID must not be null");
             }
 
+            logger.debug(String.format("Keberos authentication succeeded. Authentication ID: %s AuthorizationID: %s",
+                    ac.getAuthenticationID(), ac.getAuthorizationID()));
+
             // authentication ID is a Kerberos principal. We need to split the service/username component from the full
             // principal to use as the Cassandra user.
             final String clientPrincipal = ac.getAuthenticationID().split("[@/]")[0];
@@ -390,7 +396,7 @@ public class KerberosAuthenticator implements IAuthenticator {
             // will throw an AuthenticationException if user does not exist
             final AuthenticatedUser principalUser = getCassandraUser(clientPrincipal);
 
-            if (ac.getAuthorizationID() == null)
+            if (ac.getAuthorizationID() == null || ac.getAuthorizationID().equals(ac.getAuthenticationID()))
             {
                 this.authenticatedUser = principalUser;
                 ac.setAuthorizedID(principalUser.getName());
