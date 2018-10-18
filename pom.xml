@@ -49,6 +49,8 @@
     </dependencies>
 
     <build>
+        <finalName>${project.artifactId}-${project.version}-cassandra-${cassandra.version}</finalName>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
