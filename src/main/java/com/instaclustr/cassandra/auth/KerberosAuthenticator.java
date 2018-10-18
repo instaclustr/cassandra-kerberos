@@ -289,7 +289,7 @@ public class KerberosAuthenticator implements IAuthenticator {
     private static Subject loginAsSubject(KerberosPrincipal servicePrincipal, File keytab)
     {
         logger.debug("Logging in Kerberos service principal {} using keytab at {}", servicePrincipal, keytab.getAbsolutePath());
-        
+
         final javax.security.auth.login.Configuration conf = new javax.security.auth.login.Configuration() {
             @Override
             public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
@@ -389,9 +389,6 @@ public class KerberosAuthenticator implements IAuthenticator {
                 throw new AuthenticationException("Authentication ID must not be null");
             }
 
-            logger.debug(String.format("Keberos authentication succeeded. Authentication ID: %s AuthorizationID: %s",
-                    ac.getAuthenticationID(), ac.getAuthorizationID()));
-
             // authentication ID is a Kerberos principal. We need to split the service/username component from the full
             // principal to use as the Cassandra user.
             final String clientPrincipal = ac.getAuthenticationID().split("[@/]")[0];
@@ -404,9 +401,6 @@ public class KerberosAuthenticator implements IAuthenticator {
                 this.authenticatedUser = principalUser;
                 ac.setAuthorizedID(principalUser.getName());
                 ac.setAuthorized(true);
-
-                logger.trace("Kerberos client principal \"{}\" authenticated as Cassandra user \"{}\"",
-                        ac.getAuthenticationID(), principalUser.getName());
             }
             else
             {
@@ -419,9 +413,6 @@ public class KerberosAuthenticator implements IAuthenticator {
                     this.authenticatedUser = assumedUser;
                     ac.setAuthorizedID(assumedUser.getName());
                     ac.setAuthorized(true);
-
-                    logger.trace("Kerberos client principal \"{}\" authenticated as Cassandra user \"{}\"",
-                            ac.getAuthenticationID(), assumedUser.getName());
                 }
                 else
                 {
@@ -434,6 +425,12 @@ public class KerberosAuthenticator implements IAuthenticator {
                             String.format("Cassandra user \"%s\" is unable to assume the role \"%s\"",
                                     principalUser.getName(), assumedUser.getName()));
                 }
+            }
+
+            if (ac.isAuthorized())
+            {
+                logger.trace("Kerberos client principal \"{}\" authenticated as Cassandra user \"{}\" with {} QOP",
+                        ac.getAuthenticationID(), ac.getAuthorizedID(), saslServer.getNegotiatedProperty(Sasl.QOP));
             }
         }
 
