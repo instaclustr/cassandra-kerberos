@@ -301,6 +301,8 @@ public class KerberosAuthenticator implements IAuthenticator {
                                         .put("useKeyTab", "true")
                                         .put("keyTab", keytab.getAbsolutePath())
                                         .put("storeKey", "true")
+                                        .put("doNotPrompt", "true")
+                                        .put("isInitiator", "false")
                                         .build()
                         )
                 };
@@ -355,7 +357,7 @@ public class KerberosAuthenticator implements IAuthenticator {
 
         private KerberosSaslAuthenticator(final String saslProtocol, final Map<String, ?> saslProperties)
         {
-            logger.debug("Creating SaslServer for {} with {} mechanism", config.servicePrincipal, SASL_MECHANISM);
+            logger.debug("Creating SaslServer for {} with {} mechanism. SASL Protocol: {} SASL Properties: {}", config.servicePrincipal, SASL_MECHANISM, saslProtocol, saslProperties);
             try {
                 this.saslServer = Subject.doAs(subject, (PrivilegedExceptionAction<SaslServer>) () ->
                         Sasl.createSaslServer(
