@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.instaclustr.cassandra</groupId>
-    <artifactId>cassandra-kerberos</artifactId>
+    <artifactId>cassandra-3-11-kerberos</artifactId>
     <version>0.0.1</version>
 
     <name>Cassandra Kerberos Authenticator</name>
@@ -26,31 +26,9 @@
             <artifactId>cassandra-all</artifactId>
             <version>${cassandra.version}</version>
         </dependency>
-
-        <!--Test Dependencies-->
-        <dependency>
-            <groupId>org.apache.kerby</groupId>
-            <artifactId>kerb-simplekdc</artifactId>
-            <version>1.1.1</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <version>5.3.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.3.0</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>
-        <finalName>${project.artifactId}-${project.version}-cassandra-${cassandra.version}</finalName>
-
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
