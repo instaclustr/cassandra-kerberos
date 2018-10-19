@@ -480,7 +480,7 @@ public class KerberosAuthenticator implements IAuthenticator {
 
             return new AuthenticatedUser(username);
         }
-        catch (UncheckedExecutionException e)
+        catch (NoSuchRoleException | UncheckedExecutionException e)
         {
             // the credentials were somehow invalid - either a non-existent role, or one without a defined password
             if (e.getCause() instanceof NoSuchRoleException)
