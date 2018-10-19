@@ -316,15 +316,12 @@ public class KerberosAuthenticator implements IAuthenticator {
             final LoginContext loginContext = new LoginContext("", null, null, conf);
             loginContext.login();
 
-            logger.info("Successfully authenticated as Kerberos service principal: {}", servicePrincipal);
+            logger.debug("Login context established as {}", servicePrincipal);
             return loginContext.getSubject();
         }
         catch (LoginException e)
         {
-            throw new RuntimeException("Kerberos service authentication failed. " +
-                    "Check that the values for " + Configuration.CONFIGURATION_KEYTAB_PATH_NAME + " and " +
-                    Configuration.CONFIGURATION_SERVICE_PRINCIPAL_NAME + " are correct in " +
-                    Configuration.DEFAULT_CONFIGURATION, e);
+            throw new RuntimeException("Failed to establish login context as " + servicePrincipal, e);
         }
     }
 
@@ -385,7 +382,9 @@ public class KerberosAuthenticator implements IAuthenticator {
             // this should never happen
             if (ac.getAuthenticationID() == null)
             {
-                logger.warn("Kerberos authentication succeeded, but the authentication ID is null.");
+                logger.debug("Kerberos authentication succeeded, but the authentication ID is null.");
+
+                // throw to client
                 throw new AuthenticationException("Authentication ID must not be null");
             }
 
@@ -421,6 +420,7 @@ public class KerberosAuthenticator implements IAuthenticator {
                                     "specified by the authorization ID.",
                             ac.getAuthenticationID(), principalUser.getName(), assumedUser.getName());
 
+                    // throw to client
                     throw new AuthenticationException(
                             String.format("Cassandra user \"%s\" is unable to assume the role \"%s\"",
                                     principalUser.getName(), assumedUser.getName()));
@@ -435,16 +435,22 @@ public class KerberosAuthenticator implements IAuthenticator {
         }
 
         @Override
-        public byte[] evaluateResponse(final byte[] clientResponse) throws AuthenticationException
+        public byte[] evaluateResponse(final byte[] response) throws AuthenticationException
         {
             try
             {
                 return Subject.doAs(subject, (PrivilegedExceptionAction<byte[]>) () ->
-                        saslServer.evaluateResponse(clientResponse));
+                        saslServer.evaluateResponse(response));
             }
             catch (PrivilegedActionException e)
             {
-                throw new RuntimeException(e.getException());
+                logger.error("The SASL server could not evaluate the response sent by the client. " +
+                        "Check that the authentication mechanism is configured correctly, and that the client " +
+                        "is sending a valid SASL/{} response.", SASL_MECHANISM, e.getException());
+
+                // throw to client
+                throw new AuthenticationException("The SASL server could not evaluate the response sent by the client. " +
+                        "The server may not be configured correctly, or the response may be invalid.");
             }
         }
 
