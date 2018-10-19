@@ -16,6 +16,7 @@ To build a fully-packaged JAR, just run `mvn clean package`
 1. Ensure that the following pre-requisite systems are configured:
     
     - A unique DNS record is created for each node (use `hostname -f` on each node to verify that the DNS FQDN is configured)
+    - A reverse DNS record is created for each node
     - A Kerberos 5 KDC server is available
     - Kerberos client libraries are installed on each Cassandra node
     - An NTP client is installed & configured on each Cassandra node. Ideally the Cassandra nodes sync 
