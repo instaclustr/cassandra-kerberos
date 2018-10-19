@@ -4,7 +4,7 @@
 
     <groupId>com.instaclustr.cassandra</groupId>
     <artifactId>cassandra-3-11-kerberos</artifactId>
-    <version>0.0.1</version>
+    <version>0.1</version>
 
     <name>Cassandra Kerberos Authenticator</name>
     <url>https://github.com/instaclustr/cassandra-kerberos</url>
