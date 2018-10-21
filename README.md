@@ -16,7 +16,7 @@ To build a fully-packaged JAR, just run `mvn clean package`
 1. Ensure that the following pre-requisite systems are configured:
     
     - A unique DNS record is created for each node (use `hostname -f` on each node to verify that the DNS FQDN is configured)
-    - A reverse DNS record is created for each node
+    - A reverse DNS record is created for each node, matching the `broadcast_rpc_address`
     - A Kerberos 5 KDC server is available
     - Kerberos client libraries are installed on each Cassandra node
     - An NTP client is installed & configured on each Cassandra node. Ideally the Cassandra nodes sync 
@@ -26,10 +26,12 @@ To build a fully-packaged JAR, just run `mvn clean package`
 
 2. Ensure that the value of [rpc_address](http://cassandra.apache.org/doc/latest/configuration/cassandra_config_file.html#rpc-address)
    (and optionally [broadcast_rpc_address](http://cassandra.apache.org/doc/latest/configuration/cassandra_config_file.html#broadcast-rpc-address), if using) 
-   in the `cassandra.yaml` config file is not set to `localhost`
+   in the `cassandra.yaml` config file is not set to `localhost`. Reverse-DNS records must be created to match the `broadcast_rpc_address`. 
+   This enables clients to resolve the Kerberos service principal's hostname from the IP address.
 
 2. Configure the `/etc/krb5.conf` Kerberos config file on each node (see [here](http://web.mit.edu/kerberos/www/krb5-latest/doc/admin/conf_files/krb5_conf.html) for further details)
 
+    Below is an example `krb5.conf` for an `EXAMPLE.COM` Kerberos realm:
     ```
     [logging]
     default = FILE:/var/log/krb5libs.log

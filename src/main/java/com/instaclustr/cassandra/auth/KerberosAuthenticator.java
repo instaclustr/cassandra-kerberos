@@ -128,15 +128,15 @@ public class KerberosAuthenticator implements IAuthenticator {
         private Configuration(){}
 
         public File keytab() {
-            return this.keytab;
+            return keytab;
         }
 
         public String qop() {
-            return this.qop;
+            return qop;
         }
 
         public KerberosPrincipal servicePrincipal() {
-            return this.servicePrincipal;
+            return servicePrincipal;
         }
 
         public String getKerberosPrincipalServiceNameComponent() {
@@ -457,16 +457,16 @@ public class KerberosAuthenticator implements IAuthenticator {
         @Override
         public boolean isComplete()
         {
-            return saslServer.isComplete() && (this.authenticatedUser != null);
+            return saslServer.isComplete() && (authenticatedUser != null);
         }
 
         @Override
         public AuthenticatedUser getAuthenticatedUser() throws AuthenticationException
         {
-            if (!this.isComplete())
+            if (!isComplete())
                 throw new AuthenticationException("SASL negotiation is not complete");
 
-            return this.authenticatedUser;
+            return authenticatedUser;
         }
     }
 
@@ -513,10 +513,9 @@ public class KerberosAuthenticator implements IAuthenticator {
         try
         {
             logger.debug("Querying role {}", roleName);
-            SelectStatement authenticationStatement = this.getRoleStatement;
 
             ResultMessage.Rows rows =
-                    authenticationStatement.execute(QueryState.forInternalCalls(),
+                    getRoleStatement.execute(QueryState.forInternalCalls(),
                             QueryOptions.forInternalCalls(ConsistencyLevel.LOCAL_ONE,
                                     Lists.newArrayList(ByteBufferUtil.bytes(roleName))),
                             System.nanoTime());
@@ -540,7 +539,7 @@ public class KerberosAuthenticator implements IAuthenticator {
         }
     }
 
-    private static class UserCache extends AuthCache<String, String> implements KerberosAuthenticator.CredentialsCacheMBean
+    private static class UserCache extends AuthCache<String, String> implements CredentialsCacheMBean
     {
         private UserCache(KerberosAuthenticator authenticator)
         {
