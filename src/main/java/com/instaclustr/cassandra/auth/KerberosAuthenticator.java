@@ -37,6 +37,7 @@ import org.apache.cassandra.service.ClientState;
 import org.apache.cassandra.service.QueryState;
 import org.apache.cassandra.transport.messages.ResultMessage;
 import org.apache.cassandra.utils.ByteBufferUtil;
+import org.apache.cassandra.utils.FBUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -361,7 +362,7 @@ public class KerberosAuthenticator implements IAuthenticator {
                         Sasl.createSaslServer(
                                 SASL_MECHANISM,
                                 saslProtocol,
-                                InetAddress.getLocalHost().getCanonicalHostName(),
+                                FBUtilities.getBroadcastRpcAddress().getCanonicalHostName(),
                                 saslProperties,
                                 callbacks -> {
                                     for(final Callback cb: callbacks) {
