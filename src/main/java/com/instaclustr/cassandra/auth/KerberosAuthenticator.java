@@ -125,21 +125,21 @@ public class KerberosAuthenticator implements IAuthenticator {
         private Configuration(){}
 
         public File keytab() {
-            return this.keytab;
+            return keytab;
         }
 
         public String qop() {
-            return this.qop;
+            return qop;
         }
 
         public KerberosPrincipal servicePrincipal() {
-            return this.servicePrincipal;
+            return servicePrincipal;
         }
 
         public String getKerberosPrincipalServiceNameComponent() {
             final Pattern kerberosPrincipalPattern = Pattern.compile("([^/@]*)(/([^/@]*))?@([^/@]*)");
 
-            Matcher match = kerberosPrincipalPattern.matcher(this.servicePrincipal.toString());
+            Matcher match = kerberosPrincipalPattern.matcher(servicePrincipal.toString());
 
             if (!match.matches())
                 throw new RuntimeException("Config value for " + CONFIGURATION_SERVICE_PRINCIPAL_NAME + " in " +
@@ -452,16 +452,16 @@ public class KerberosAuthenticator implements IAuthenticator {
         @Override
         public boolean isComplete()
         {
-            return saslServer.isComplete() && (this.authenticatedUser != null);
+            return saslServer.isComplete() && (authenticatedUser != null);
         }
 
         @Override
         public AuthenticatedUser getAuthenticatedUser() throws AuthenticationException
         {
-            if (!this.isComplete())
+            if (!isComplete())
                 throw new AuthenticationException("SASL negotiation is not complete");
 
-            return this.authenticatedUser;
+            return authenticatedUser;
         }
     }
 
