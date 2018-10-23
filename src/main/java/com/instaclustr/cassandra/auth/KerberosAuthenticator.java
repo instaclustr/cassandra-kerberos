@@ -282,6 +282,13 @@ public class KerberosAuthenticator implements IAuthenticator {
                 : "com.sun.security.auth.module.Krb5LoginModule";
     }
 
+    /**
+     * Login using a Kerberos 5 service principal & keytab
+     *
+     * @param servicePrincipal A Kerberos 5 service principal
+     * @param keytab A Kerberos 5 keytab file containing keys for the service principal
+     * @return Authenticated Subject representing the principal
+     */
     private static Subject loginAsSubject(KerberosPrincipal servicePrincipal, File keytab)
     {
         logger.debug("Logging in Kerberos service principal {} using keytab at {}", servicePrincipal, keytab.getAbsolutePath());
@@ -309,15 +316,19 @@ public class KerberosAuthenticator implements IAuthenticator {
         try
         {
             // Don't need to supply a name, as it is ignored in the Configuration implementation
-            final LoginContext loginContext = new LoginContext("", null, null, conf);
+            final LoginContext loginContext = new LoginContext("", null, cbh -> {
+                // Callback is called when login using the configuration fails
+                throw new RuntimeException(new LoginException(String.format("Failed to establish a login context for " +
+                        "principal %s with keytab at %s.", servicePrincipal, keytab.getAbsolutePath())));
+                }, conf);
             loginContext.login();
 
-            logger.debug("Login context established as {}", servicePrincipal);
+            logger.debug("Login context established");
             return loginContext.getSubject();
         }
         catch (LoginException e)
         {
-            throw new RuntimeException("Failed to establish login context as " + servicePrincipal, e);
+            throw new RuntimeException("Failed to establish a login context", e);
         }
     }
 
