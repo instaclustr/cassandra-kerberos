@@ -29,7 +29,7 @@
     </dependencies>
 
     <build>
-        <finalName>cassandra-kerberos-${project.version}</finalName>
+        <finalName>${project.artifactId}-${project.version}</finalName>
 
         <plugins>
             <plugin>
