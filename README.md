@@ -1,4 +1,4 @@
-# Cassandra Driver Authenticator
+# Cassandra Kerberos Authenticator
 
 A GSSAPI authentication provider for [Apache Cassandra](https://cassandra.apache.org/).
 This authenticator plugin is intended to work with the 
