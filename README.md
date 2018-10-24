@@ -1,9 +1,10 @@
 # Cassandra Kerberos Authenticator
 
 A GSSAPI authentication provider for [Apache Cassandra](https://cassandra.apache.org/).
+
 This authenticator plugin is intended to work with the 
-[Cassandra Java driver Kerberos authenticator](https://github.com/instaclustr/cassandra-java-driver-kerberos) 
-plugin for the Apache [Cassandra Java driver](https://github.com/datastax/java-driver).
+[Cassandra Java Driver Kerberos Authenticator](https://github.com/instaclustr/cassandra-java-driver-kerberos) 
+plugin for the [Cassandra Java driver](https://github.com/datastax/java-driver).
 
 ## Build
 
