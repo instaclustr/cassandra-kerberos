@@ -2,13 +2,38 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.instaclustr.cassandra</groupId>
+    <groupId>com.instaclustr</groupId>
     <artifactId>cassandra-3-11-kerberos</artifactId>
-    <version>0.1</version>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
 
     <name>Cassandra Kerberos Authenticator</name>
+    <description>
+        An authenticator plugin for Apache Cassandra that provides the ability to authenticate via GSS-API
+    </description>
+
     <url>https://github.com/instaclustr/cassandra-kerberos</url>
-    <packaging>jar</packaging>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Various</name>
+            <organization>Instaclustr</organization>
+            <organizationUrl>https://www.instaclustr.com</organizationUrl>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git@github.com:instaclustr/cassandra-kerberos.git</connection>
+        <developerConnection>scm:git:git@github.com:instaclustr/cassandra-kerberos.git</developerConnection>
+        <url>https://github.com/instaclustr/cassandra-kerberos</url>
+    </scm>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

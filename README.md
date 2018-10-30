@@ -6,6 +6,8 @@ This authenticator plugin is intended to work with the
 [Cassandra Java Driver Kerberos Authenticator](https://github.com/instaclustr/cassandra-java-driver-kerberos) 
 plugin for the [Cassandra Java driver](https://github.com/datastax/java-driver).
 
+*Note: This build is tested with Cassandra 3.11.x. For Cassandra 3.0.x support, switch to the cassandra-3.0.x branch*
+
 ## Build
 
 To build a fully-packaged JAR, just run `mvn clean package`
