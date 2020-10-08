@@ -1,26 +1,24 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
+    
     <groupId>com.instaclustr</groupId>
-    <artifactId>cassandra-3-11-kerberos</artifactId>
+    <artifactId>cassandra-kerberos-3.11</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
-
-    <name>Cassandra Kerberos Authenticator</name>
-    <description>
-        An authenticator plugin for Apache Cassandra that provides the ability to authenticate via GSS-API
-    </description>
-
+    
+    <name>Cassandra Kerberos Authenticator for Cassandra 3.11</name>
+    <description>An authenticator plugin for Apache Cassandra to authenticate via GSS-API</description>
+    
     <url>https://github.com/instaclustr/cassandra-kerberos</url>
-
+    
     <licenses>
         <license>
             <name>The Apache License, Version 2.0</name>
             <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
         </license>
     </licenses>
-
+    
     <developers>
         <developer>
             <name>Various</name>
@@ -28,34 +26,46 @@
             <organizationUrl>https://www.instaclustr.com</organizationUrl>
         </developer>
     </developers>
-
+    
+    <organization>
+        <name>Instaclustr</name>
+        <url>https://instaclustr.com</url>
+    </organization>
+    
     <scm>
         <connection>scm:git:git@github.com:instaclustr/cassandra-kerberos.git</connection>
         <developerConnection>scm:git:git@github.com:instaclustr/cassandra-kerberos.git</developerConnection>
         <url>https://github.com/instaclustr/cassandra-kerberos</url>
     </scm>
-
+    
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
-        <cassandra.version>3.11.2</cassandra.version>
-
-        <maven.compiler.version>3.7.0</maven.compiler.version>
+        <cassandra.version>3.11.8</cassandra.version>
+        
+        <maven.javadoc.plugin.version>3.1.1</maven.javadoc.plugin.version>
+        <maven.jar.plugin.version>3.1.1</maven.jar.plugin.version>
+        <maven.source.plugin.version>3.1.0</maven.source.plugin.version>
+        <maven.gpg.plugin.version>1.6</maven.gpg.plugin.version>
+        <maven.compiler.version>3.8.1</maven.compiler.version>
+        <nexus.staging.maven.plugin.version>1.6.8</nexus.staging.maven.plugin.version>
+        
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-
+    
     <dependencies>
         <dependency>
             <groupId>org.apache.cassandra</groupId>
             <artifactId>cassandra-all</artifactId>
             <version>${cassandra.version}</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
-
+    
     <build>
-        <finalName>${project.artifactId}-${project.version}</finalName>
-
+        <finalName>cassandra-kerberos-3.11</finalName>
+        
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -64,12 +74,13 @@
                 <configuration>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
+                    <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.1.0</version>
+                <version>${maven.jar.plugin.version}</version>
                 <configuration>
                     <archive>
                         <index>true</index>
@@ -87,18 +98,70 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-gpg-plugin</artifactId>
-                <version>1.6</version>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>${maven.source.plugin.version}</version>
                 <executions>
                     <execution>
-                        <id>sign-artifacts</id>
-                        <phase>verify</phase>
+                        <id>attach-sources</id>
                         <goals>
-                            <goal>sign</goal>
+                            <goal>jar-no-fork</goal>
                         </goals>
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${maven.javadoc.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <source>8</source>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
+    
+    <profiles>
+        <!-- Use this profile when releasing. For example: "mvn clean deploy -P release" -->
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${maven.gpg.plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>${nexus.staging.maven.plugin.version}</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <serverId>ossrh</serverId>
+                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                            <!--Use "mvn nexus-staging:release -P release" to push from the OSSRH staging repo to Maven Central-->
+                            <autoReleaseAfterClose>false</autoReleaseAfterClose>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

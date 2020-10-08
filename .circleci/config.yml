@@ -1,0 +1,14 @@
+version: 2
+jobs:
+  build:
+
+    working_directory: ~/cassandra-kerberos
+
+    docker:
+      - image: circleci/openjdk:8-jdk-stretch
+
+    steps:
+
+      - checkout
+
+      - run: mvn install

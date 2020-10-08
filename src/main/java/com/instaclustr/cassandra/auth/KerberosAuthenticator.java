@@ -19,7 +19,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.UncheckedExecutionException;
 import org.apache.cassandra.auth.*;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.config.SchemaConstants;
@@ -495,7 +494,7 @@ public class KerberosAuthenticator implements IAuthenticator {
 
             return new AuthenticatedUser(username);
         }
-        catch (ExecutionException | UncheckedExecutionException e)
+        catch (Exception e)
         {
             // the credentials were somehow invalid - either a non-existent role, or one without a defined password
             if (e.getCause() instanceof NoSuchRoleException)
