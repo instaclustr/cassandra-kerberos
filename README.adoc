@@ -1,0 +1,108 @@
+== Cassandra Kerberos Authenticator
+
+_A GSSAPI authentication provider for Apache Cassandra_
+
+image:https://circleci.com/gh/instaclustr/cassandra-kerberos.svg?style=svg["Instaclustr",link="https://circleci.com/gh/instaclustr/cassandra-kerberos"]
+
+This authenticator plugin is intended to work with the
+https://github.com/instaclustr/cassandra-java-driver-kerberos[Cassandra Java Driver Kerberos Authenticator]
+plugin for the https://github.com/datastax/java-driver[Cassandra Java driver].
+
+Supported versions:
+
+* 2.2
+* 3.0
+* 3.11
+* 4.0
+
+=== Build
+
+To build the project, just run `mvn clean install`.
+
+The project is organised into modules, each module per major Cassandra version.
+You will find in `target` of each module for respective Cassandra version:
+
+* JAR
+* DEB package
+* RPM package
+
+=== Environment set-up
+
+1. Ensure that the following pre-requisite systems are configured:
+
+- A unique DNS record is created for each node (use `hostname -f` on each node to verify that the DNS FQDN is configured)
+- A reverse DNS record is created for each node, matching the `broadcast_rpc_address`
+- A Kerberos 5 KDC server is available
+- Kerberos client libraries are installed on each Cassandra node
+- An NTP client is installed & configured on each Cassandra node. Ideally the Cassandra nodes sync
+with the same time source as the KDC in order to minimise potential time-sync issues.
+- If using Oracle Java, ensure that the https://www.oracle.com/technetwork/java/javase/downloads/jce8-download-2133166.html[Java Cryptographic Extensions Unlimited Strength Jurisdiction Policy Files]
+are installed (not necessary when using OpenJDK or other JRE implementations)
+
+2. Ensure that the value of http://cassandra.apache.org/doc/latest/configuration/cassandra_config_file.html#rpc-address[rpc_address]
+(and optionally http://cassandra.apache.org/doc/latest/configuration/cassandra_config_file.html#broadcast-rpc-address[broadcast_rpc_address], if using)
+in the `cassandra.yaml` config file is not set to `localhost`. Reverse-DNS records must be created to match the `broadcast_rpc_address`.
+This enables clients to resolve the Kerberos service principal's hostname from the IP address.
+
+3. Configure the `/etc/krb5.conf` Kerberos config file on each node (see http://web.mit.edu/kerberos/www/krb5-latest/doc/admin/conf_files/krb5_conf.html[here] for further details). Below is an example `krb5.conf` for an `EXAMPLE.COM` Kerberos realm:
+
+    [logging]
+    default = FILE:/var/log/krb5libs.log
+    [libdefaults]
+     default_realm = EXAMPLE.COM
+     dns_lookup_realm = false
+     dns_lookup_kdc = false
+    [realms]
+     EXAMPLE.COM = {
+      kdc = kdc.example.com
+      admin_server = kdc.example.com
+    }
+    [domain_realm]
+     .example.com = EXAMPLE.COM
+     example.com = EXAMPLE.COM
+
+4. For each cassandra node, create a new Kerberos service principal (see http://web.mit.edu/kerberos/www/krb5-latest/doc/admin/admin_commands/kadmin_local.html#add-principal[here] for further details)
+Note that the service name portion of the principal (`cassandra`, in this example) must be the same for
+each node in the cluster, and must *also* match the SASL protocol name specified when configuring
+the https://github.com/instaclustr/cassandra-java-driver-kerberos[Cassandra Java driver Kerberos authenticator].
+The hostname portion of the principal (e.g. `node1.mycluster.example.com`) must match the DNS entry for each Cassandra node.
+
+    kadmin -q "addprinc -randkey cassandra/node1.mycluster.example.com@EXAMPLE.COM"
+    kadmin -q "addprinc -randkey cassandra/node2.mycluster.example.com@EXAMPLE.COM"
+    kadmin -q "addprinc -randkey cassandra/node3.mycluster.example.com@EXAMPLE.COM"
+
+5. Create a keytab for each newly created service principal (see http://web.mit.edu/kerberos/www/krb5-latest/doc/admin/admin_commands/kadmin_local.html#ktadd[here] for further details)
+
+    kadmin -q "ktadd -k /node1.keytab cassandra/node1.mycluster.example.com@EXAMPLE.COM"
+    kadmin -q "ktadd -k /node2.keytab cassandra/node2.mycluster.example.com@EXAMPLE.COM"
+    kadmin -q "ktadd -k /node3.keytab cassandra/node3.mycluster.example.com@EXAMPLE.COM"
+
+6. Copy the corresponding keytab file to the Cassandra configuration directory on each node, and set the appropriate access controls
+
+     scp kdc.example.com:/node1.keytab /etc/cassandra/node1.keytab
+     chown cassandra:cassandra /etc/cassandra/node1.keytab
+     chmod 400 /etc/cassandra/node1.keytab
+
+
+=== Install & configure the Kerberos authenticator
+
+1. Copy the `cassandra-krb5.properties` file to the Cassandra configuration directory on each node (e.g. `/etc/cassandra/conf` or `/etc/cassandra`, based on OS).
+Set `service_principal` and `keytab` to correspond to the service principals and keytabs created in the previous steps.
+
+    service_principal=cassandra/node1.mycluster.example.com@EXAMPLE.COM
+    keytab=node1.keytab
+    qop=auth
+
+2. Copy the authenicator jar to the Cassandra `lib` directory (e.g. `/usr/share/cassandra/lib/`)
+
+3. Set the http://cassandra.apache.org/doc/latest/configuration/cassandra_config_file.html#authenticator[authenticator]
+option in the `cassandra.yaml` config file.
+
+    authenticator: com.instaclustr.cassandra.auth.KerberosAuthenticator
+
+You may control where to fetch the configuration file from by system property set upon Cassandra startup, for example `-Dcassandra.krb5.config=/path/to/conf.properties`
+
+In case you are using packages, JAR and conf file is installed into the right place automatically.
+
+In case you are
+Please see https://www.instaclustr.com/support/documentation/announcements/instaclustr-open-source-project-status/[status] for Instaclustr support status of this project

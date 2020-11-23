@@ -1,0 +1,35 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    
+    <parent>
+        <groupId>com.instaclustr</groupId>
+        <artifactId>cassandra-kerberos-parent</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    
+    <artifactId>cassandra-kerberos-base</artifactId>
+    <version>1.0.0</version>
+    
+    <name>Cassandra Kerberos Authenticator Base Module</name>
+    <description>Base plugin artifact for Apache Cassandra to authenticate via GSS-API</description>
+    
+    <properties>
+        <!-- does not matter, runtime will be different -->
+        <cassandra.version>3.11.9</cassandra.version>
+    </properties>
+    
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.cassandra</groupId>
+            <artifactId>cassandra-all</artifactId>
+            <version>${cassandra.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+    
+    <build>
+        <finalName>${project.artifactId}</finalName>
+    </build>
+</project>

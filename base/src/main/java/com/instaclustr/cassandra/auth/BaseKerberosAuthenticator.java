@@ -1,42 +1,4 @@
-/*
- * Licensed to Instaclustr Pty. Ltd. (Instaclustr) under one
- * or more contributor license agreements.  Instaclustr licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.instaclustr.cassandra.auth;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import org.apache.cassandra.auth.*;
-import org.apache.cassandra.config.DatabaseDescriptor;
-import org.apache.cassandra.config.SchemaConstants;
-import org.apache.cassandra.cql3.QueryOptions;
-import org.apache.cassandra.cql3.QueryProcessor;
-import org.apache.cassandra.cql3.UntypedResultSet;
-import org.apache.cassandra.cql3.statements.SelectStatement;
-import org.apache.cassandra.db.ConsistencyLevel;
-import org.apache.cassandra.exceptions.AuthenticationException;
-import org.apache.cassandra.exceptions.ConfigurationException;
-import org.apache.cassandra.exceptions.RequestExecutionException;
-import org.apache.cassandra.service.ClientState;
-import org.apache.cassandra.service.QueryState;
-import org.apache.cassandra.transport.messages.ResultMessage;
-import org.apache.cassandra.utils.ByteBufferUtil;
-import org.apache.cassandra.utils.FBUtilities;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
@@ -50,7 +12,6 @@ import javax.security.sasl.SaslServer;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetAddress;
 import java.net.URL;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
@@ -58,31 +19,33 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * KerberosAuthenticator is an IAuthenticator implementation
- * that uses Kerberos to authenticate external Cassandra users.
- *
- * If the Cassandra user corresponding to the client's Kerberos
- * principal has been GRANTed access to additional roles, those
- * roles may be assumed directly if a role name is specified
- * with the SASL authorizationID.
- *
- * If an authorizationID is not provided, the client will
- * assume the Cassandra user corresponding to the client's
- * Kerberos principal.
- *
- * This IAuthenticator does not currently support legacy
- * authentication, therefore only C* 3.0+ is supported.
- */
-public class KerberosAuthenticator implements IAuthenticator {
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import org.apache.cassandra.auth.AuthKeyspace;
+import org.apache.cassandra.auth.AuthenticatedUser;
+import org.apache.cassandra.auth.DataResource;
+import org.apache.cassandra.auth.IAuthenticator;
+import org.apache.cassandra.auth.IResource;
+import org.apache.cassandra.cql3.UntypedResultSet;
+import org.apache.cassandra.cql3.statements.SelectStatement;
+import org.apache.cassandra.exceptions.AuthenticationException;
+import org.apache.cassandra.exceptions.ConfigurationException;
+import org.apache.cassandra.exceptions.RequestExecutionException;
+import org.apache.cassandra.transport.messages.ResultMessage;
+import org.apache.cassandra.utils.FBUtilities;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-    private static final Logger logger = LoggerFactory.getLogger(KerberosAuthenticator.class);
+public abstract class BaseKerberosAuthenticator implements IAuthenticator {
 
-    private static final String SASL_MECHANISM = "GSSAPI";
+    private static final Logger logger = LoggerFactory.getLogger(BaseKerberosAuthenticator.class);
+
+    public static final String SASL_MECHANISM = "GSSAPI";
 
     // name of the role column.
     private static final String ROLE = "role";
@@ -91,23 +54,25 @@ public class KerberosAuthenticator implements IAuthenticator {
 
     private Subject subject;
 
-    private SelectStatement getRoleStatement;
-    private UserCache cache;
-
     @Override
     public boolean requireAuthentication()
     {
         return true;
     }
 
+    protected Configuration getConfiguration()
+    {
+        return config;
+    }
+
     @Override
     public Set<? extends IResource> protectedResources()
     {
         // Also protected by CassandraRoleManager, but the duplication doesn't hurt and is more explicit
-        return ImmutableSet.of(DataResource.table(SchemaConstants.AUTH_KEYSPACE_NAME, AuthKeyspace.ROLES));
+        return ImmutableSet.of(DataResource.table("system_auth", AuthKeyspace.ROLES));
     }
 
-    private static class Configuration
+    protected static class Configuration
     {
         private URL configUrl;
 
@@ -144,7 +109,7 @@ public class KerberosAuthenticator implements IAuthenticator {
 
             if (!match.matches())
                 throw new RuntimeException("Config value for " + CONFIGURATION_SERVICE_PRINCIPAL_NAME + " in " +
-                        configUrl.toString() + " is not valid. Kerberos principal must be in KRB_NT_SRV_HST format");
+                                               configUrl.toString() + " is not valid. Kerberos principal must be in KRB_NT_SRV_HST format");
 
             return match.group(1);
         }
@@ -159,14 +124,14 @@ public class KerberosAuthenticator implements IAuthenticator {
             }
             catch (Exception e)
             {
-                ClassLoader loader = KerberosAuthenticator.class.getClassLoader();
+                ClassLoader loader = BaseKerberosAuthenticator.class.getClassLoader();
                 url = loader.getResource(rawUrl);
                 if (url == null)
                 {
                     String required = "file:" + File.separator + File.separator;
                     throw new ConfigurationException("Cannot locate " + rawUrl + ".  " +
-                            "If this is a local file, please confirm you've provided " +
-                            required + File.separator + " as a URI prefix.");
+                                                         "If this is a local file, please confirm you've provided " +
+                                                         required + File.separator + " as a URI prefix.");
                 }
             }
 
@@ -180,15 +145,15 @@ public class KerberosAuthenticator implements IAuthenticator {
             file = new File(path);
             if (!file.isFile())
             {
-                ClassLoader loader = KerberosAuthenticator.class.getClassLoader();
+                ClassLoader loader = BaseKerberosAuthenticator.class.getClassLoader();
                 URL url = loader.getResource(path);
 
                 if (url == null)
                 {
                     String required = "file:" + File.separator + File.separator;
                     throw new ConfigurationException("Cannot locate " + path + ".  " +
-                            "If this is a local file, please confirm you've provided " +
-                            required + File.separator + " as a URI prefix.");
+                                                         "If this is a local file, please confirm you've provided " +
+                                                         required + File.separator + " as a URI prefix.");
                 } else
                 {
                     file = new File(url.getFile());
@@ -221,7 +186,7 @@ public class KerberosAuthenticator implements IAuthenticator {
             this.keytab = getKeytab(config.getProperty(CONFIGURATION_KEYTAB_PATH_NAME, DEFAULT_KEYTAB_PATH));
             this.qop = config.getProperty(CONFIGURATION_QOP_NAME, DEFAULT_QOP);
             this.servicePrincipal = new KerberosPrincipal(
-                    config.getProperty(CONFIGURATION_SERVICE_PRINCIPAL_NAME), KerberosPrincipal.KRB_NT_SRV_HST);
+                config.getProperty(CONFIGURATION_SERVICE_PRINCIPAL_NAME), KerberosPrincipal.KRB_NT_SRV_HST);
         }
 
         void validate() throws ConfigurationException
@@ -236,15 +201,15 @@ public class KerberosAuthenticator implements IAuthenticator {
                 throw new ConfigurationException("No value for " + CONFIGURATION_QOP_NAME + " found in " + configUrl.toString());
 
             final Collection<String> validQopValues = ImmutableList.<String>builder()
-                    .add("auth").add("auth-conf").add("auth-int").build();
+                .add("auth").add("auth-conf").add("auth-int").build();
 
             if (!validQopValues.contains(this.qop))
                 throw new ConfigurationException("Config value for " + CONFIGURATION_QOP_NAME + " in " +
-                        configUrl.toString() + " is not valid. Valid values are: " + validQopValues.toString());
+                                                     configUrl.toString() + " is not valid. Valid values are: " + validQopValues.toString());
 
             if (!(this.keytab.isFile() && this.keytab.canRead()))
                 throw new ConfigurationException("Keytab file " + keytab.getAbsolutePath() + " specified in " +
-                        configUrl.toString() + " does not exist, is not a normal file, or cannot be read.");
+                                                     configUrl.toString() + " does not exist, is not a normal file, or cannot be read.");
         }
 
         static Configuration loadConfig() {
@@ -266,22 +231,16 @@ public class KerberosAuthenticator implements IAuthenticator {
     public void setup()
     {
         subject = loginAsSubject(config.servicePrincipal(), config.keytab());
-
-        // Prepare statement to check whether a role exists in Cassandra
-        String query = String.format("SELECT %s FROM %s.%s WHERE role = ?",
-                ROLE,
-                SchemaConstants.AUTH_KEYSPACE_NAME,
-                AuthKeyspace.ROLES);
-        this.getRoleStatement = prepare(query);
-
-        cache = new UserCache(this);
+        afterSetup();
     }
+
+    public abstract void afterSetup();
 
     static String getKrb5LoginModuleName()
     {
         return System.getProperty("java.vendor").contains("IBM")
-                ? "com.ibm.security.auth.module.Krb5LoginModule"
-                : "com.sun.security.auth.module.Krb5LoginModule";
+            ? "com.ibm.security.auth.module.Krb5LoginModule"
+            : "com.sun.security.auth.module.Krb5LoginModule";
     }
 
     /**
@@ -299,18 +258,18 @@ public class KerberosAuthenticator implements IAuthenticator {
             @Override
             public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
                 return new AppConfigurationEntry[] {
-                        new AppConfigurationEntry(
-                                getKrb5LoginModuleName(),
-                                AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
-                                ImmutableMap.<String, String>builder()
-                                        .put("principal", servicePrincipal.toString())
-                                        .put("useKeyTab", "true")
-                                        .put("keyTab", keytab.getAbsolutePath())
-                                        .put("storeKey", "true")
-                                        .put("doNotPrompt", "true")
-                                        .put("isInitiator", "false")
-                                        .build()
-                        )
+                    new AppConfigurationEntry(
+                        getKrb5LoginModuleName(),
+                        AppConfigurationEntry.LoginModuleControlFlag.REQUIRED,
+                        ImmutableMap.<String, String>builder()
+                            .put("principal", servicePrincipal.toString())
+                            .put("useKeyTab", "true")
+                            .put("keyTab", keytab.getAbsolutePath())
+                            .put("storeKey", "true")
+                            .put("doNotPrompt", "true")
+                            .put("isInitiator", "false")
+                            .build()
+                    )
                 };
             }
         };
@@ -321,8 +280,8 @@ public class KerberosAuthenticator implements IAuthenticator {
             final LoginContext loginContext = new LoginContext("", null, cbh -> {
                 // Callback is called when login using the configuration fails
                 throw new RuntimeException(new LoginException(String.format("Failed to establish a login context for " +
-                        "principal %s with keytab at %s.", servicePrincipal, keytab.getAbsolutePath())));
-                }, conf);
+                                                                                "principal %s with keytab at %s.", servicePrincipal, keytab.getAbsolutePath())));
+            }, conf);
             loginContext.login();
 
             logger.debug("Login context established");
@@ -334,21 +293,6 @@ public class KerberosAuthenticator implements IAuthenticator {
         }
     }
 
-    private static SelectStatement prepare(String query)
-    {
-        return (SelectStatement) QueryProcessor.getStatement(query, ClientState.forInternalCalls()).statement;
-    }
-
-    @Override
-    public SaslNegotiator newSaslNegotiator(InetAddress clientAddress)
-    {
-
-        final String saslProtocol = config.getKerberosPrincipalServiceNameComponent();
-        final Map<String, String> saslProperties = ImmutableMap.<String, String>builder().put(Sasl.QOP, config.qop()).build();
-
-        return new KerberosSaslAuthenticator(saslProtocol, saslProperties);
-    }
-
     @Override
     public AuthenticatedUser legacyAuthenticate(Map<String, String> credentials) throws AuthenticationException
     {
@@ -356,29 +300,29 @@ public class KerberosAuthenticator implements IAuthenticator {
         throw new UnsupportedOperationException("Legacy authentication is not supported");
     }
 
-    private class KerberosSaslAuthenticator implements SaslNegotiator
+    public abstract class KerberosSaslAuthenticator implements SaslNegotiator
     {
         private final SaslServer saslServer;
 
         private AuthenticatedUser authenticatedUser = null;
 
-        private KerberosSaslAuthenticator(final String saslProtocol, final Map<String, ?> saslProperties)
+        public KerberosSaslAuthenticator(final String saslProtocol, final Map<String, ?> saslProperties)
         {
             logger.debug("Creating SaslServer for {} with {} mechanism. SASL Protocol: {} SASL Properties: {}", config.servicePrincipal, SASL_MECHANISM, saslProtocol, saslProperties);
             try {
                 this.saslServer = Subject.doAs(subject, (PrivilegedExceptionAction<SaslServer>) () ->
-                        Sasl.createSaslServer(
-                                SASL_MECHANISM,
-                                saslProtocol,
-                                FBUtilities.getBroadcastRpcAddress().getCanonicalHostName(),
-                                saslProperties,
-                                callbacks -> {
-                                    for(final Callback cb: callbacks) {
-                                        if (cb instanceof AuthorizeCallback) {
-                                            handleAuthorizeCallback((AuthorizeCallback) cb);
-                                        }
-                                    }
-                                }));
+                    Sasl.createSaslServer(
+                        SASL_MECHANISM,
+                        saslProtocol,
+                        serverName(),
+                        saslProperties,
+                        callbacks -> {
+                            for(final Callback cb: callbacks) {
+                                if (cb instanceof AuthorizeCallback) {
+                                    handleAuthorizeCallback((AuthorizeCallback) cb);
+                                }
+                            }
+                        }));
             } catch (PrivilegedActionException e) {
                 throw new RuntimeException(e.getException());
             }
@@ -425,21 +369,21 @@ public class KerberosAuthenticator implements IAuthenticator {
                 else
                 {
                     logger.debug("Kerberos client principal \"{}\" authenticated, but the Cassandra user \"{}\" " +
-                                    "does not have permission to assume the role \"{}\" " +
-                                    "specified by the authorization ID.",
-                            ac.getAuthenticationID(), principalUser.getName(), assumedUser.getName());
+                                     "does not have permission to assume the role \"{}\" " +
+                                     "specified by the authorization ID.",
+                                 ac.getAuthenticationID(), principalUser.getName(), assumedUser.getName());
 
                     // throw to client
                     throw new AuthenticationException(
-                            String.format("Cassandra user \"%s\" is unable to assume the role \"%s\"",
-                                    principalUser.getName(), assumedUser.getName()));
+                        String.format("Cassandra user \"%s\" is unable to assume the role \"%s\"",
+                                      principalUser.getName(), assumedUser.getName()));
                 }
             }
 
             if (ac.isAuthorized())
             {
                 logger.debug("Kerberos client principal \"{}\" authorized as Cassandra user \"{}\"",
-                        ac.getAuthenticationID(), ac.getAuthorizedID());
+                             ac.getAuthenticationID(), ac.getAuthorizedID());
             }
         }
 
@@ -449,17 +393,17 @@ public class KerberosAuthenticator implements IAuthenticator {
             try
             {
                 return Subject.doAs(subject, (PrivilegedExceptionAction<byte[]>) () ->
-                        saslServer.evaluateResponse(response));
+                    saslServer.evaluateResponse(response));
             }
             catch (PrivilegedActionException e)
             {
-                logger.error("The SASL server could not evaluate the response sent by the client. " +
-                        "Check that the authentication mechanism is configured correctly, and that the client " +
-                        "is sending a valid SASL/{} response.", SASL_MECHANISM, e.getException());
+                logger.error(String.format("The SASL server could not evaluate the response sent by the client. " +
+                                               "Check that the authentication mechanism is configured correctly, and that the client " +
+                                               "is sending a valid SASL/%s response: %s", SASL_MECHANISM, e.getException().getMessage()));
 
                 // throw to client
                 throw new AuthenticationException("The SASL server could not evaluate the response sent by the client. " +
-                        "The server may not be configured correctly, or the response may be invalid.");
+                                                      "The server may not be configured correctly, or the response may be invalid: " + e.getException().getMessage());
             }
         }
 
@@ -477,101 +421,89 @@ public class KerberosAuthenticator implements IAuthenticator {
 
             return authenticatedUser;
         }
+
+        /**
+         * Check that a given pre-authenticated principal exists in Cassandra
+         *
+         * @param username Username of an externally-authenticated principal
+         * @return authenticated Cassandra user
+         */
+        private AuthenticatedUser getCassandraUser(String username) throws AuthenticationException
+        {
+            try
+            {
+                fetchUser(username);
+
+                return new AuthenticatedUser(username);
+            }
+            catch (Exception e)
+            {
+                // the credentials were somehow invalid - either a non-existent role, or one without a defined password
+                if (e.getCause() instanceof NoSuchRoleException)
+                    throw new AuthenticationException(String.format("Provided username %s is incorrect", username));
+
+                // an unanticipated exception occured whilst querying the credentials table
+                if (e.getCause() instanceof RequestExecutionException)
+                {
+                    logger.trace("Error performing internal authentication", e);
+                    throw new AuthenticationException(String.format("Error during authentication of user %s : %s", username, e.getMessage()));
+                }
+
+                throw new RuntimeException(e);
+            }
+        }
+
+        public abstract void fetchUser(String username);
+
+        public abstract String serverName();
     }
 
-    /**
-     * Check that a given pre-authenticated principal exists in Cassandra
-     *
-     * @param username Username of an externally-authenticated principal
-     * @return authenticated Cassandra user
-     */
-    private AuthenticatedUser getCassandraUser(String username) throws AuthenticationException
+
+    public abstract static class QueryUserFunction implements Function<String, String>
     {
-        try
-        {
-            // This will throw an exception if the username does not exist
-            cache.get(username);
+        SelectStatement getRoleStatement;
 
-            return new AuthenticatedUser(username);
+        // Prepare statement to check whether a role exists in Cassandra
+        final String query = String.format("SELECT %s FROM %s.%s WHERE role = ?",
+                                           ROLE,
+                                           "system_auth",
+                                           AuthKeyspace.ROLES);
+
+        public QueryUserFunction()
+        {
+            this.getRoleStatement = prepare(query);
         }
-        catch (Exception e)
-        {
-            // the credentials were somehow invalid - either a non-existent role, or one without a defined password
-            if (e.getCause() instanceof NoSuchRoleException)
-                throw new AuthenticationException(String.format("Provided username %s is incorrect", username));
 
-            // an unanticipated exception occured whilst querying the credentials table
-            if (e.getCause() instanceof RequestExecutionException)
+        @Override
+        public String apply(final String roleName) {
+            try
+            {
+                logger.debug("Querying role {}", roleName);
+
+                ResultMessage.Rows rows = execute(roleName);
+
+                // If either a non-existent role name was supplied, or no credentials
+                // were found for that role we don't want to cache the result so we throw
+                // a specific, but unchecked, exception to keep LoadingCache happy.
+                if (rows.result.isEmpty())
+                    throw new NoSuchRoleException();
+
+                UntypedResultSet result = UntypedResultSet.create(rows.result);
+                if (!result.one().has(ROLE))
+                    throw new NoSuchRoleException();
+
+                return result.one().getString(ROLE);
+            }
+            catch (RequestExecutionException e)
             {
                 logger.trace("Error performing internal authentication", e);
-                throw new AuthenticationException(String.format("Error during authentication of user %s : %s", username, e.getMessage()));
+                throw e;
             }
-
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * Query Cassandra role table for a given role
-     *
-     * @param roleName Cassandra role name
-     * @return role name
-     */
-    private String queryUserName(String roleName)
-    {
-        try
-        {
-            logger.debug("Querying role {}", roleName);
-
-            ResultMessage.Rows rows =
-                    getRoleStatement.execute(QueryState.forInternalCalls(),
-                            QueryOptions.forInternalCalls(ConsistencyLevel.LOCAL_ONE,
-                                    Lists.newArrayList(ByteBufferUtil.bytes(roleName))),
-                            System.nanoTime());
-
-            // If either a non-existent role name was supplied, or no credentials
-            // were found for that role we don't want to cache the result so we throw
-            // a specific, but unchecked, exception to keep LoadingCache happy.
-            if (rows.result.isEmpty())
-                throw new NoSuchRoleException();
-
-            UntypedResultSet result = UntypedResultSet.create(rows.result);
-            if (!result.one().has(ROLE))
-                throw new NoSuchRoleException();
-
-            return result.one().getString(ROLE);
-        }
-        catch (RequestExecutionException e)
-        {
-            logger.trace("Error performing internal authentication", e);
-            throw e;
-        }
-    }
-
-    private static class UserCache extends AuthCache<String, String> implements CredentialsCacheMBean
-    {
-        private UserCache(KerberosAuthenticator authenticator)
-        {
-            super("CredentialsCache",
-                    DatabaseDescriptor::setCredentialsValidity,
-                    DatabaseDescriptor::getCredentialsValidity,
-                    DatabaseDescriptor::setCredentialsUpdateInterval,
-                    DatabaseDescriptor::getCredentialsUpdateInterval,
-                    DatabaseDescriptor::setCredentialsCacheMaxEntries,
-                    DatabaseDescriptor::getCredentialsCacheMaxEntries,
-                    authenticator::queryUserName,
-                    () -> true);
         }
 
-        public void invalidateCredentials(String roleName)
-        {
-            invalidate(roleName);
-        }
-    }
+        public abstract SelectStatement prepare(String query);
 
-    public static interface CredentialsCacheMBean extends AuthCacheMBean
-    {
-        public void invalidateCredentials(String roleName);
+        public abstract ResultMessage.Rows execute(String roleName);
     }
 
     // Just a marker so we can identify that invalid credentials were the
@@ -580,3 +512,4 @@ public class KerberosAuthenticator implements IAuthenticator {
     {
     }
 }
+
