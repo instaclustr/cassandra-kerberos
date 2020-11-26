@@ -3,6 +3,9 @@ jobs:
   build:
     working_directory: ~/cassandra-kerberos
 
+    docker:
+      - image: circleci/openjdk:8-jdk-stretch
+
     environment:
       MAVEN_OPTS: -Xmx3200m
 
@@ -19,19 +22,17 @@ jobs:
             - ~/.m2
           key: m2-{{ checksum "pom.xml" }}
 
-      - run: mvn clean install
+      - run: mvn clean install -DoutputDirectory=/tmp/artifacts
 
-      - persist_to_workspace:
-          root: ~/cassandra-ldap
-          paths:
-            - "cassandra-2.2/target/cassandra-kerberos-2.2-*.jar"
-            - "cassandra-3.0/target/cassandra-kerberos-3.0-*.jar"
-            - "cassandra-3.11/target/cassandra-kerberos-3.11-*.jar"
-            - "cassandra-4.0/target/cassandra-kerberos-4.0-*.jar"
+      - store_artifacts:
+          path: /tmp/artifacts
 
   build-2-2:
 
     working_directory: ~/cassandra-kerberos
+
+    docker:
+      - image: circleci/openjdk:8-jdk-stretch
 
     environment:
       MAVEN_OPTS: -Xmx3200m
@@ -63,6 +64,9 @@ jobs:
 
     working_directory: ~/cassandra-kerberos
 
+    docker:
+      - image: circleci/openjdk:8-jdk-stretch
+
     environment:
       MAVEN_OPTS: -Xmx3200m
 
@@ -93,6 +97,9 @@ jobs:
 
     working_directory: ~/cassandra-kerberos
 
+    docker:
+      - image: circleci/openjdk:8-jdk-stretch
+
     environment:
       MAVEN_OPTS: -Xmx3200m
 
@@ -121,6 +128,9 @@ jobs:
 
   build-4-0:
 
+    docker:
+      - image: circleci/openjdk:8-jdk-stretch
+
     working_directory: ~/cassandra-kerberos
 
     environment:
@@ -145,9 +155,9 @@ jobs:
       - persist_to_workspace:
           root: /tmp/artifacts
           paths:
-            - "cassandra-kerberos-4.0*.jar"
-            - "cassandra-kerberos-4.0*.deb"
-            - "cassandra-kerberos-4.0*.rpm"
+            - "cassandra-kerberos-4*.jar"
+            - "cassandra-kerberos-4*.deb"
+            - "cassandra-kerberos-4*.rpm"
 
   publish-github-release-2-2:
     docker:
