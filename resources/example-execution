@@ -1,0 +1,6 @@
+java -Dsun.security.krb5.debug=true \
+  -Djava.security.krb5.kdc=node1.example.com \
+  -Djava.security.krb5.realm=EXAMPLE.COM \
+  -Djava.security.krb5.conf=/etc/krb5.conf \
+  -Djava.security.auth.login.config=/root/examples/cassandra/kerberosauthdemo/jaas2.conf \
+  -jar kerberos-auth-demo-1.0-SNAPSHOT.jar
