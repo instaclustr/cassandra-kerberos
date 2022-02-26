@@ -17,7 +17,7 @@
     
     <properties>
         <!-- does not matter, runtime will be different -->
-        <cassandra.version>3.11.9</cassandra.version>
+        <cassandra.version>3.11.12</cassandra.version>
     </properties>
     
     <dependencies>
