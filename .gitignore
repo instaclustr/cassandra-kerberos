@@ -3,6 +3,7 @@
 target
 out
 gen
+/cassandra-4.1/dependency-reduced-pom.xml
 /cassandra-3.11/dependency-reduced-pom.xml
 /cassandra-3.0/dependency-reduced-pom.xml
 /cassandra-4/dependency-reduced-pom.xml

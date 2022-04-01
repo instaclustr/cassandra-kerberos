@@ -14,7 +14,11 @@
     
     <name>Cassandra Kerberos Authenticator for Cassandra 2.2</name>
     <description>An authenticator plugin for Apache Cassandra 2.2 to authenticate via GSS-API</description>
-    
+
+    <properties>
+        <cassandra.version>2.2.19</cassandra.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.instaclustr</groupId>
@@ -30,14 +34,14 @@
     </dependencies>
     
     <build>
-        <finalName>${project.artifactId}-${project.version}</finalName>
+        <finalName>cassandra-kerberos-${cassandra.version}-${project.version}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>${maven.shade.plugin.version}</version>
                 <configuration>
-                    <finalName>${project.artifactId}-${project.version}</finalName>
+                    <finalName>cassandra-kerberos-${cassandra.version}-${project.version}</finalName>
                 </configuration>
             </plugin>
             <plugin>

@@ -96,7 +96,7 @@ public class KerberosAuthenticator extends BaseKerberosAuthenticator
 
             @Override
             public String serverName() {
-                return FBUtilities.getBroadcastAddressAndPort().address.getCanonicalHostName();
+                return FBUtilities.getBroadcastAddressAndPort().getAddress().getCanonicalHostName();
             }
         };
     }
@@ -113,8 +113,11 @@ public class KerberosAuthenticator extends BaseKerberosAuthenticator
                   DatabaseDescriptor::getCredentialsUpdateInterval,
                   DatabaseDescriptor::setCredentialsCacheMaxEntries,
                   DatabaseDescriptor::getCredentialsCacheMaxEntries,
-                  queryUserFunction,
-                  () -> true);
+                  DatabaseDescriptor::setCredentialsCacheActiveUpdate,
+                  DatabaseDescriptor::getCredentialsCacheActiveUpdate,
+                  queryUserFunction::apply,
+                  HashMap::new,
+                  () -> DatabaseDescriptor.getAuthenticator().requireAuthentication());
         }
 
         public void invalidateCredentials(final String roleName)

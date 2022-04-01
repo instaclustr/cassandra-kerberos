@@ -9,14 +9,14 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     
-    <artifactId>cassandra-kerberos-3.0</artifactId>
+    <artifactId>cassandra-kerberos-4.1</artifactId>
     <version>1.0.0</version>
     
-    <name>Cassandra Kerberos Authenticator for Cassandra 3.0</name>
-    <description>An authenticator plugin for Apache Cassandra 3.0 to authenticate via GSS-API</description>
+    <name>Cassandra Kerberos Authenticator for Cassandra 4.1</name>
+    <description>An authenticator plugin for Apache Cassandra 4 to authenticate via GSS-API</description>
 
     <properties>
-        <cassandra.version>3.0.26</cassandra.version>
+        <cassandra.version>4.1-SNAPSHOT</cassandra.version>
     </properties>
 
     <dependencies>
@@ -61,7 +61,7 @@
                             <requires>
                                 <require>
                                     <name>cassandra</name>
-                                    <version>3.0</version>
+                                    <version>4.0</version>
                                     <greaterOrEqual/>
                                 </require>
                             </requires>
@@ -71,5 +71,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

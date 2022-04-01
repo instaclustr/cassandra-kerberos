@@ -4,7 +4,7 @@ jobs:
     working_directory: ~/cassandra-kerberos
 
     docker:
-      - image: circleci/openjdk:8-jdk-stretch
+      - image: cimg/openjdk:8.0
 
     environment:
       MAVEN_OPTS: -Xmx3200m
@@ -32,7 +32,7 @@ jobs:
     working_directory: ~/cassandra-kerberos
 
     docker:
-      - image: circleci/openjdk:8-jdk-stretch
+      - image: cimg/openjdk:8.0
 
     environment:
       MAVEN_OPTS: -Xmx3200m
@@ -65,7 +65,7 @@ jobs:
     working_directory: ~/cassandra-kerberos
 
     docker:
-      - image: circleci/openjdk:8-jdk-stretch
+      - image: cimg/openjdk:8.0
 
     environment:
       MAVEN_OPTS: -Xmx3200m
@@ -98,7 +98,7 @@ jobs:
     working_directory: ~/cassandra-kerberos
 
     docker:
-      - image: circleci/openjdk:8-jdk-stretch
+      - image: cimg/openjdk:8.0
 
     environment:
       MAVEN_OPTS: -Xmx3200m
@@ -129,7 +129,7 @@ jobs:
   build-4-0:
 
     docker:
-      - image: circleci/openjdk:8-jdk-stretch
+      - image: cimg/openjdk:8.0
 
     working_directory: ~/cassandra-kerberos
 

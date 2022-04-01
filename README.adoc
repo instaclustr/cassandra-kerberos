@@ -15,8 +15,9 @@ Supported versions:
 * 3.11
 * 4.0
 
-WARNING: if you install / configure this authenticator, with open source Cassandra,
-for now, you will not be able to connect through CQL shell anymore as this functionality is not
+NOTE: CQLSH integration works only with Cassandra 4.1 and above.
+
+WARNING: if you install / configure this authenticator, with open source Cassandra of version less than 4.1, you will not be able to connect through CQL shell anymore as this functionality is not
 implemented in CQL shell yet. This authenticator is meant to be used only in connection with Java applications
 for which you need to setup your driver to use https://github.com/instaclustr/cassandra-java-driver-kerberos[Kerberos Java driver], also from Instaclustr.
 
@@ -108,6 +109,38 @@ option in the `cassandra.yaml` config file.
 You may control where to fetch the configuration file from by system property set upon Cassandra startup, for example `-Dcassandra.krb5.config=/path/to/conf.properties`
 
 In case you are using packages, JAR and conf file is installed into the right place automatically.
+
+=== CQLSH
+
+To setup CQLSH, you need to insert and modify accordingly your cqlshrc file. To successfuly log in, you need to
+have a valid ticket. How to obtain it is outside of this document but you should see the output similar to this:
+
+----
+[AuthProvider]
+classname=SaslAuthProvider
+module=cassandra.auth
+
+[AuthProviderExtendedProperties]
+service = cassandra
+keytab=/etc/cassandra/cassandra.keytab
+mechanism = GSSAPI
+qop = auth
+----
+
+After successful login, you should have a ticket granted:
+
+----
+[root@node1 ~]# klist
+Ticket cache: KEYRING:persistent:0:0
+Default principal: root@EXAMPLE.COM
+
+Valid starting       Expires              Service principal
+04/01/2022 15:57:59  04/02/2022 15:39:42  cassandra/node1.example.com@EXAMPLE.COM
+04/01/2022 15:39:42  04/02/2022 15:39:42  krbtgt/EXAMPLE.COM@EXAMPLE.COM
+----
+
+If you are logged in as root in shell, it will try to log you in Cassandra as root as well, so you need to have
+the corresponding role in Cassandra before you authenticate. Create your roles beforehand in order to log in after you switch to KerberosAuthenticator in `cassandra.yaml`.
 
 In case you are
 Please see https://www.instaclustr.com/support/documentation/announcements/instaclustr-open-source-project-status/[status] for Instaclustr support status of this project
