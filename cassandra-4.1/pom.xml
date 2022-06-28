@@ -61,7 +61,7 @@
                             <requires>
                                 <require>
                                     <name>cassandra</name>
-                                    <version>4.0</version>
+                                    <version>4.1</version>
                                     <greaterOrEqual/>
                                 </require>
                             </requires>

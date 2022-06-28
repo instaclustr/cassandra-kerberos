@@ -9,7 +9,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     
-    <artifactId>cassandra-kerberos-4</artifactId>
+    <artifactId>cassandra-kerberos-4.0</artifactId>
     <version>1.0.0</version>
     
     <name>Cassandra Kerberos Authenticator for Cassandra 4</name>
