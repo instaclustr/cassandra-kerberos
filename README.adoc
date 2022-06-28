@@ -112,15 +112,13 @@ In case you are using packages, JAR and conf file is installed into the right pl
 
 === CQLSH
 
-To setup CQLSH, you need to insert and modify accordingly your cqlshrc file. To successfuly log in, you need to
-have a valid ticket. How to obtain it is outside of this document but you should see the output similar to this:
+To set up CQLSH, you need to insert and modify accordingly your `cqlshrc` file. To successfully log in, you need to
+have a valid ticket. How to obtain it is outside this document, but you should see the output similar to this:
 
 ----
-[AuthProvider]
-classname=SaslAuthProvider
+[auth_provider]
 module=cassandra.auth
-
-[AuthProviderExtendedProperties]
+classname=SaslAuthProvider
 service = cassandra
 keytab=/etc/cassandra/cassandra.keytab
 mechanism = GSSAPI

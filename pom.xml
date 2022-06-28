@@ -18,7 +18,7 @@
     </modules>
     
     <name>Cassandra Kerberos Authenticator Parent</name>
-    <description>Cassadra Kerbeors plugin parent</description>
+    <description>Cassandra Kerberos plugin parent</description>
     <url>https://github.com/instaclustr/cassandra-kerberos</url>
     
     <inceptionYear>2020</inceptionYear>
