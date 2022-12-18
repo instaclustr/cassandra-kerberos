@@ -12,11 +12,11 @@
     <artifactId>cassandra-kerberos-4.0</artifactId>
     <version>1.0.0</version>
     
-    <name>Cassandra Kerberos Authenticator for Cassandra 4</name>
-    <description>An authenticator plugin for Apache Cassandra 4 to authenticate via GSS-API</description>
+    <name>Cassandra Kerberos Authenticator for Cassandra 4.0</name>
+    <description>An authenticator plugin for Apache Cassandra 4.0 to authenticate via GSS-API</description>
 
     <properties>
-        <cassandra.version>4.0.3</cassandra.version>
+        <cassandra.version>4.0.7</cassandra.version>
     </properties>
 
     <dependencies>

@@ -14,6 +14,7 @@ Supported versions:
 * 3.0
 * 3.11
 * 4.0
+* 4.1
 
 NOTE: CQLSH integration works only with Cassandra 4.1 and above.
 
@@ -119,10 +120,10 @@ have a valid ticket. How to obtain it is outside this document, but you should s
 [auth_provider]
 module=cassandra.auth
 classname=SaslAuthProvider
-service = cassandra
+service=cassandra
 keytab=/etc/cassandra/cassandra.keytab
-mechanism = GSSAPI
-qop = auth
+mechanism=GSSAPI
+qop=auth
 ----
 
 After successful login, you should have a ticket granted:

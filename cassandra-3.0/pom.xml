@@ -16,7 +16,7 @@
     <description>An authenticator plugin for Apache Cassandra 3.0 to authenticate via GSS-API</description>
 
     <properties>
-        <cassandra.version>3.0.26</cassandra.version>
+        <cassandra.version>3.0.28</cassandra.version>
     </properties>
 
     <dependencies>

@@ -22,7 +22,7 @@ jobs:
             - ~/.m2
           key: m2-{{ checksum "pom.xml" }}
 
-      - run: mvn clean install -DoutputDirectory=/tmp/artifacts && cp cassandra-{2.2,3.0,3.11,4,4.1}/target/cassandra-kerberos-*.jar /tmp/artifacts
+      - run: mvn clean install -DoutputDirectory=/tmp/artifacts && cp cassandra-{2.2,3.0,3.11,4.0,4.1}/target/cassandra-kerberos-*.jar /tmp/artifacts
 
       - store_artifacts:
           path: /tmp/artifacts
